@@ -1,0 +1,130 @@
+    <html>
+    <head>
+        <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/aes.js"></script>
+
+        <style>
+            .beige {
+                background-color: burlywood;
+            }
+
+            .green {
+                background-color: green;
+            }
+
+            .black {
+                background-color: black;
+            }
+
+            table {
+                table-layout: fixed;
+                border: 1px solid black;
+                border-collapse: collapse;
+            }
+
+            td {
+                width: 50px;
+                height: 50px;
+                border: 1px solid gray;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="board">
+        </div>
+        <br />
+        <input type="textbox" name="field" value="field" disabled="disabled" id="board2-url" />
+
+
+        <script>
+            function makeBoards() {
+                let idc = [];
+
+                /**
+                0: assassin
+                1: innocent bystander
+                2: green
+                */
+                let board1Draft = [0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0];
+                let board2Draft = [2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1];
+
+                let indexes = [];
+                let board1 = [];
+                let board2 = [];
+                for(let i = 0; i < 25; i++) {
+                    indexes.push(i);
+                    board1.push(null);
+                    board2.push(null);
+                }
+                indexes = shuffle(indexes);
+                
+                for(let i = 0; i < indexes.length; i++) {
+                    board1[indexes[i]] = board1Draft[i];
+                    board2[indexes[i]] = board2Draft[i];
+                }
+
+                return [board1, board2];
+            }
+
+            function render(board, flip) {
+                let str = "<table>\n";
+
+                let classes = ["black", "beige", "green"];
+            
+                let ctr = 0;
+                let inc = 1;
+                if(flip) {
+                    ctr = 24;
+                    inc = -1;
+                }
+                for(let i = 0; i < 5; i++) {
+                    str += "<tr>\n";
+                    for(let j = 0; j < 5; j++) {
+                        str += "<td class='" + classes[board[ctr]] + "'></td>";
+                        ctr += inc;
+                    }
+                    str += "\n</tr>\n";
+                }
+                str += "</table>";
+                console.log(str);
+
+                $("#board").html(str);
+            }
+
+            // lazily stolen from https://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array
+            function shuffle(a) {
+                for (let i = a.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [a[i], a[j]] = [a[j], a[i]];
+                }
+                return a;
+            }
+
+            function encryptBoard(board) {
+                return CryptoJS.AES.encrypt(JSON.stringify(board), "codenames").toString();
+            }
+
+            function decryptBoard(enc) {
+                return JSON.parse(CryptoJS.AES.decrypt(enc, "codenames").toString(CryptoJS.enc.Utf8));
+            }
+
+            function go() {
+                if(location.hash.length > 0) {
+                    let boardEnc = decodeURI(location.hash).substr(1);
+                    let board2 = decryptBoard(boardEnc);
+                    $("#board2-url").hide();
+                    render(board2, true);
+                }
+                else {
+                    let boards = makeBoards();
+                    let board2Enc = encryptBoard(boards[1]);
+                    console.log(board2Enc);
+                    $("#board2-url").val("#" + board2Enc);
+                    render(boards[0], false);
+                }
+            }
+            go();
+        </script>
+    </body>
+</html>
